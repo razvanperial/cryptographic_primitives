@@ -1,0 +1,12 @@
+[package]
+name = "cryptographic_primitives"
+version = "0.1.0"
+authors = ["Razvan-Andrei Perial <razvanperial@gmail.com>"]
+edition = "2021"
+description = "A crate that provides cryptographic primitives."
+license = "MIT"
+
+[dependencies]
+bitvec = "1.0.1"
+hmac = "0.12.1"
+sha2 = "0.10.8"
