@@ -5,6 +5,7 @@ authors = ["Razvan-Andrei Perial <razvanperial@gmail.com>"]
 edition = "2021"
 description = "A crate that provides cryptographic primitives."
 license = "MIT"
+repository = "https://github.com/razvanperial/cryptographic_primitives"
 
 [dependencies]
 bitvec = "1.0.1"

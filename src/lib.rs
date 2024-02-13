@@ -209,7 +209,6 @@ pub fn route_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static s
     Ok(String::from(result))
 }
 
-
 /// Decrypts a string using the route cipher.
 /// 
 /// # Arguments
