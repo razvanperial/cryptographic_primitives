@@ -1,9 +1,11 @@
 //! # cryptograhpic_primitives
 //! 'cryptograhpic_primitives' is a crate that provides implementations of various cryptographic primitives.
 
-use hmac::{Hmac, Mac};
-use sha2::Sha256;
-use bitvec::prelude::*;
+pub mod constants;
+pub mod helpers;
+
+use crate::constants::*;
+use crate::helpers::*;
 
 /// Encrypts a string using the rail fence cipher.
 /// 
@@ -69,7 +71,6 @@ pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'sta
 
     Ok(result)
 }
-
 
 /// Decrypts a string using the rail fence cipher.
 /// 
@@ -152,7 +153,6 @@ pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'sta
     
     Ok(result)
 }
-
 
 /// Encrypts a string using the route cipher.
 /// 
@@ -264,39 +264,6 @@ pub fn route_cipher_decrypt(input: &str, key: u128) -> Result<String, &'static s
     result = result.trim_end().to_string();
 
     Ok(String::from(result))
-}
-
-fn kdf(initial_key: &[u8], num_rounds: usize) -> Result<Vec<Vec<u8>>, &'static str> { 
-    let mut subkeys = Vec::with_capacity(num_rounds);
-    let mut key = initial_key.to_vec();
-
-    for _ in 0..num_rounds {
-        // Use HMAC-SHA256 as the PRF
-        let mac = match Hmac::<Sha256>::new_from_slice(&key) {
-            Ok(m) => m,
-            Err(_) => panic!("HMAC creation failed"),
-        };
-
-        // Generate subkey
-        let subkey = mac.finalize().into_bytes().to_vec();
-
-        // Update the key for the next round
-        key = subkey.clone();
-
-        subkeys.push(subkey);
-    }
-    Ok(subkeys)
-}
-
-fn feistel_round_function(input: &[u8], subkey: &[u8]) -> Result<Vec<u8>, &'static str> {
-    let mut mac = match Hmac::<Sha256>::new_from_slice(subkey) {
-        Ok(m) => m,
-        Err(_) => panic!("HMAC creation failed"),
-    };
-
-    mac.update(input);
-
-    Ok(mac.finalize().into_bytes().to_vec())
 }
 
 /// Encrypts an array of bytes using the feistel cipher
@@ -423,62 +390,6 @@ pub fn feistel_network_decrypt(input: &[u8], key: &u128, rounds: u32) -> Result<
 
     if result[input_size - 1] == 0 {
         result.pop();
-    }
-
-    Ok(result)
-}
-
-const S_BOX:[u8; 256] = [
-    99, 152, 15, 157, 33, 158, 53, 11, 182, 195, 21, 14, 120, 17, 89, 203, 59,
-    244, 1, 147, 175, 32, 214, 52, 133, 54, 148, 146, 225, 51, 111, 124, 16, 
-    223, 79, 235, 60, 145, 231, 230, 136, 164, 43, 142, 206, 188, 243, 88, 255, 
-    44, 247, 216, 38, 185, 123, 126, 233, 198, 202, 77, 179, 208, 180, 209, 150,
-    125, 140, 240, 224, 55, 2, 13, 204, 159, 254, 128, 160, 196, 189, 226, 121, 
-    166, 27, 103, 229, 28, 122, 82, 80, 73, 36, 41, 105, 24, 222,  9, 168, 34, 
-    65, 63, 74, 241, 66, 227, 69, 40, 57, 127, 45, 132, 50, 48, 138, 61, 135,
-    242, 171, 71, 18, 90, 153, 170, 4, 112, 0, 177, 141, 207, 10, 35, 118, 155, 
-    232, 29, 169, 178, 129, 154, 192, 70, 234, 37, 104, 67, 249, 237, 100, 215,
-    47, 115,  5, 42, 113, 96, 248, 144, 97, 200, 162, 64, 19, 109, 49, 85, 106, 
-    149, 186, 238, 98, 250, 20, 163, 236, 76, 86, 114, 78, 94, 102, 183, 83, 92,
-    91, 173, 190, 217, 181, 81, 165, 252,  7, 137, 39, 107, 46, 95, 58, 194, 
-    174, 119, 172, 31, 134, 253, 156, 205, 211, 197, 199, 130, 68, 93, 213, 116, 
-    218, 245,  3, 108, 221, 72, 62, 228, 143, 12, 117, 219, 131, 75, 151, 246,
-    184, 193, 167, 84, 30, 22, 187, 210, 239, 212, 26, 220, 101, 176, 25, 56, 
-    191, 161,  6, 87, 23, 201, 139,  8, 251, 110
-];
-
-const P_BOX:[u8; 128] = [
-    17, 19, 28, 97, 83, 61, 69, 85, 65, 30, 36, 126, 107, 121, 94, 41, 117,
-    75, 52, 110, 84, 100, 103, 58, 22, 125, 82, 43, 119, 53, 122, 90, 35, 73,
-    74, 95, 37, 32, 55, 111, 7, 66, 23, 68, 31, 50, 62, 15, 108, 99, 120,
-    54, 102, 70, 13, 81, 60, 3, 34, 51, 48, 79, 92, 40, 12, 44, 29, 11,
-    67, 38, 124, 98, 2, 18, 47, 88, 89, 71, 4, 118, 127, 123, 86, 59, 9,
-    77, 25, 39, 113, 27, 1, 114, 49, 20, 14, 64, 109, 5, 80, 112, 46, 72,
-    6, 63, 104, 93, 56, 0, 106, 42, 87, 101, 91, 115, 26, 45, 33, 24, 105,
-    21, 78, 96, 76, 16, 10, 57, 8, 116
-];
-
-// permute a block of 128 bits using the P_BOX defined above
-fn permute(input: &[u8], reverse: bool) -> Result<Vec<u8>, &'static str> {
-    let input_bits = input.view_bits::<Msb0>();
-    let mut permuted_bits: Vec<bool> = vec![false; 128];
-
-    for i in 0..input_bits.len() {
-        if !reverse {
-            permuted_bits[P_BOX[i] as usize] = input_bits[i];
-        } else {
-            permuted_bits[i] = input_bits[P_BOX[i] as usize];
-        }
-    }
-
-    // convert the bit vector to a byte vector
-    let mut result = Vec::with_capacity(16);
-    for i in 0..16 {
-        let mut byte = 0;
-        for j in 0..8 {
-            byte |= (permuted_bits[i * 8 + j] as u8) << (7 - j);
-        }
-        result.push(byte);
     }
 
     Ok(result)
@@ -640,6 +551,203 @@ pub fn sub_per_box_decrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
             // XOR with the subkey
             for l in 0..16 {
                 result[j + l] ^= subkeys[i as usize][l];
+            }
+        }
+    }
+
+    // remove all trailing null bytes
+    while result.last() == Some(&0) {
+        result.pop();
+    }
+
+    Ok(result)
+}
+
+/// Encrypts an array of bytes using the AES-128 cipher
+/// 
+/// # Arguments
+/// 
+/// * `input` - The array of bytes to encrypt
+/// * `key` - The key to use for encryption
+/// 
+/// # Example
+/// 
+/// ```
+/// use cryptographic_primitives::aes_128_encrypt;
+/// 
+/// let plaintext = b"Hello, world!";
+/// let ciphertext = aes_128_encrypt(plaintext, 15).unwrap();
+/// 
+/// assert_eq!(ciphertext, vec![155, 3, 38, 236, 178, 74, 170, 22, 159, 40, 200, 204, 111, 144, 70, 26]);
+/// 
+/// ```
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+pub fn aes_128_encrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
+
+    if input.is_empty() {
+        return Err("Input must not be empty");
+    }
+
+    // pad the input with null bytes if necessary
+    let mut padded_input = input.to_vec();
+    if input.len() % 16 != 0 {
+        let padding = 16 - input.len() % 16;
+        for _ in 0..padding {
+            padded_input.push(0);
+        }
+    }
+
+    let input_size = padded_input.len();
+    let mut subkeys = kdf(&key.to_le_bytes(), 6).unwrap();
+    let mut result = padded_input;
+    let mut s_box = [0u8; 256];
+    initialize_aes_sbox(&mut s_box);
+
+    // split each subkey in half to generate 128-bit subkeys
+    for i in 0..subkeys.len() {
+        let mut subkey1 = subkeys[i].to_vec();
+        let subkey2 = subkey1.split_off(16);
+        subkeys[i] = subkey1;
+        subkeys.push(subkey2);
+    }
+    subkeys.truncate(11);
+
+    for i in 0..10 {
+
+        // go over each 128-bit block of input
+        for j in (0..input_size).step_by(16) {
+
+            // First XOR step
+            if i == 0 {
+                for l in 0..16 {
+                    result[j + l] ^= subkeys[0][l];
+                }
+            }
+
+            // Sub-bytes step
+            for l in 0..16 {
+                result[j + l] = s_box[result[j + l] as usize];
+            }
+
+            let temp_result = result[j..j + 16].to_vec();
+
+            // Shift-rows step
+            for l in 0..16 {
+                result[j + l] = temp_result[(j + l + l % 4 * 4) % 16];
+            }
+
+            // Mix-columns step
+            if i < 9 { // skip this step in the last round
+                for l in (0..16).step_by(4) {
+                    let mut column = [0u8; 4];
+                    for k in 0..4 {
+                        column[k] = result[j + l + k];
+                    }
+                    gmix_column(&mut column);
+                    for k in 0..4 {
+                        result[j + l + k] = column[k];
+                    }
+                }
+            }
+
+            // Add round key
+            for l in 0..16 {
+                result[j + l] ^= subkeys[i as usize + 1][l];
+            }
+
+        }
+    }
+    Ok(result)
+}
+
+/// Decrypts an array of bytes using the AES-128 cipher
+/// 
+/// # Arguments
+/// 
+/// * `input` - The array of bytes to decrypt
+/// * `key` - The key to use for decryption
+/// 
+/// # Example
+/// 
+/// ```
+/// use cryptographic_primitives::{aes_128_encrypt, aes_128_decrypt};
+/// 
+/// let plaintext = b"Hello, world!";
+/// let ciphertext = aes_128_encrypt(plaintext, 15).unwrap();
+/// let decrypted = aes_128_decrypt(&ciphertext, 15).unwrap();
+/// 
+/// assert_eq!(decrypted, plaintext.to_vec());
+/// 
+/// ```
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+pub fn aes_128_decrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
+
+    if input.is_empty() {
+        return Err("Input must not be empty");
+    }
+
+    let input_size = input.len();
+    let mut subkeys = kdf(&key.to_le_bytes(), 6).unwrap();
+    let mut result = input.to_vec();
+    let mut s_box = [0u8; 256];
+    initialize_aes_sbox(&mut s_box);
+
+    // split each subkey in half to generate 128-bit subkeys
+    for i in 0..subkeys.len() {
+        let mut subkey1 = subkeys[i].to_vec();
+        let subkey2 = subkey1.split_off(16);
+        subkeys[i] = subkey1;
+        subkeys.push(subkey2);
+    }
+    subkeys.truncate(11);
+
+    for i in (0..10).rev() {
+
+        // go over each 128-bit block of input
+        for j in (0..input_size).step_by(16) {
+
+            // First XOR step
+            if i == 9 {
+                for l in 0..16 {
+                    result[j + l] ^= subkeys[10][l];
+                }
+            }
+            
+            let temp_result = result[j..j + 16].to_vec();
+
+            // Inverse shift-rows step
+            for l in 0..16 {    
+                result[j + l] = temp_result[(j + l + (4 - l % 4) * 4) % 16];
+            }
+
+            // Inverse sub-bytes step
+            for l in 0..16 {
+                result[j + l] = s_box.iter().position(|&x| x == result[j + l]).unwrap() as u8;
+            }
+
+            // Add round key
+            for l in 0..16 {
+                result[j + l] ^= subkeys[i as usize][l];
+            }
+
+            // Inverse mix-columns step
+            if i > 0 { // skip this step in the first round
+                for l in (0..16).step_by(4) {
+                    let mut column = [0u8; 4];
+                    for k in 0..4 {
+                        column[k] = result[j + l + k];
+                    }
+                    gmix_column_inv(&mut column);
+                    for k in 0..4 {
+                        result[j + l + k] = column[k];
+                    }
+                }
             }
         }
     }

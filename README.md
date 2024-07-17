@@ -6,25 +6,43 @@ Rust Cryptographic Primitives
 
 This repository contains a collection of cryptographic primitives implemented in Rust. The goal is to provide a comprehensive set of cryptographic primitives that are easy to use and hard to misuse. 
 
-This library was done as a personal project to learn Rust and cryptography, implementing some of the algorithms I learned in the "Secure and Dependable Systems" course at my university. The code is open source and I am happy to receive contributions and feedback. Feel free to open an issue or a pull request on [this repository](https://github.com/razvanperial/cryptographic_primitives).
+This crate was done as a personal project to learn Rust and cryptography, implementing some of the algorithms I learned in the "Secure and Dependable Systems" course at my university. The code is open source and I am happy to receive contributions and feedback. Feel free to open an issue or a pull request on [this repository](https://github.com/razvanperial/cryptographic_primitives).
+
+If this crate is useful to you, please consider giving it a star on [GitHub](https://github.com/razvanperial/cryptographic_primitives) :)
 
 ## Features
 
-The library currently provides the following cryptographic primitives, with an encryption and decryption function for each:
+The crate currently provides the following cryptographic primitives, with an encryption and decryption function for each:
 
 - Rail Fence Cipher
 - Route Cipher
 - Feistel Network
 - Substitution-Permutation Network (SPN)
+- Advanced Encryption Standard (AES)
 
 The following cryptographic primitives are planned to be implemented in the future:
 
-- Advanced Encryption Standard (AES)
 - Electronic Codebook (ECB) mode
 - Cipher Block Chaining (CBC) mode
 - Counter (CTR) mode
 - Output Feedback (OFB) mode
 - Rivest-Shamir-Adleman (RSA) algorithm
+
+The `helpers` module provides the following helper functions for cryptographic algorithms:
+
+- `rotl8`
+- `initialize_aes_sbox`
+- `permute`
+- `feistel_round_function`
+- `kdf`
+- `gmix_column`
+- `gmix_column_inv`
+
+The `constants` module provides some useful constants for cryptographic algorithms, such as:
+- and example `S-Box`
+- an example `P-Box`
+- `MIX_COLUMNS_LOOKUP_2`, `MIX_COLUMNS_LOOKUP_3`, `MIX_COLUMNS_LOOKUP_9`, `MIX_COLUMNS_LOOKUP_11`, `MIX_COLUMNS_LOOKUP_13`, `MIX_COLUMNS_LOOKUP_14` lookup tables for the AES MixColumns operation
+
 
 For any suggestions or requests, feel free to open an issue on [this repository](https://github.com/razvanperial/cryptographic_primitives).
 
@@ -42,7 +60,7 @@ You can also use `cargo` to add the dependency to your `Cargo.toml`:
 cargo add cryptographic_primitives
 ```
 
-Then, simply import the library and use the cryptographic primitives:
+Then, simply import the crate and use the cryptographic primitives:
 
 ```rust
 use cryptographic_primitives::*;
@@ -60,9 +78,8 @@ let plaintext = b"Hello, world!";
 let ciphertext = sub_per_box_encrypt(plaintext, 15, 3).unwrap();
 let decrypted = sub_per_box_decrypt(&ciphertext, 15, 3).unwrap();
 
-assert_eq!(plaintext, decrypted);
+assert_eq!(plaintext.to_vec(), decrypted);
 ```
-
 
 ## License
 
