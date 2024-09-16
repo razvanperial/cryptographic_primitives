@@ -1,8 +1,47 @@
-//! # cryptograhpic_primitives
-//! 'cryptograhpic_primitives' is a crate that provides implementations of various cryptographic primitives.
-
+//! # cryptographic_primitives
+//!
+//! `cryptographic_primitives` is a Rust crate that provides implementations of various cryptographic algorithms and ciphers.
+//! It is designed to offer flexible and easy-to-use building blocks for cryptography, suitable for both educational purposes and practical cryptographic operations.
+//! 
+//! ## Supported Algorithms
+//! 
+//! This crate includes implementations for several classic and modern cryptographic algorithms, including:
+//! 
+//! - **Rail Fence Cipher**: A transposition cipher where the plaintext is written in a zigzag pattern along multiple rails.
+//! - **Route Cipher**: Another transposition cipher that writes the plaintext into a grid and then reads it in a specific route pattern.
+//! - **Feistel Cipher**: A symmetric structure used in many block ciphers like DES. This crate allows for a flexible number of rounds and key choices.
+//! - **Substitution-Permutation Network (SPN)**: A structure used in modern block ciphers like AES, combining substitution and permutation steps for encryption.
+//! - **AES-128**: A widely used symmetric encryption standard based on a specific substitution-permutation network.
+//!
+//! ## Modules
+//! 
+//! - **constants**: Contains predefined constants like S-boxes and permutation tables used in the encryption algorithms.
+//! - **helpers**: Provides utility functions and primitives to support the cryptographic algorithms, such as byte manipulation, XOR operations, and S-box initialization.
+//! - **block_ciphers**: Implements block cipher modes of operation (e.g., ECB, CBC, OFB, CTR) and integrates with specific encryption/decryption functions.
+//! 
+//! ## Example Usage
+//! 
+//! To use the crate, import the desired function and apply it to your data. For example, to encrypt a byte array using the AES-128 cipher in ECB mode:
+//! 
+//! ```rust
+//! use cryptographic_primitives::aes_128_encrypt;
+//! use cryptographic_primitives::block_ciphers::ecb_encrypt;
+//! 
+//! let plaintext = b"Hello, world!";
+//! let key = 0x2b7e151628aed2a6abf7158809cf4f3c;
+//! let encrypted = ecb_encrypt(plaintext, key, aes_128_encrypt).unwrap();
+//! ```
+//! 
+//! ## Errors
+//! 
+//! Functions in this crate generally return a `Result<T, &'static str>` to handle potential errors, such as invalid inputs, key lengths, or padding issues. 
+//! 
+//! ## License
+//! 
+//! This crate is provided under the MIT License, allowing for both personal and commercial use.
 pub mod constants;
 pub mod helpers;
+pub mod block_ciphers;
 
 use crate::constants::*;
 use crate::helpers::*;
@@ -14,6 +53,18 @@ use crate::helpers::*;
 /// * `input` - The string to encrypt
 /// * `key` - The number of rails to use
 /// 
+/// # Returns
+/// 
+/// Returns a `Result` containing the encrypted data or an error string if encryption fails.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input string is empty
+/// * `Key must be greater than 0` - If the key is less than 1
+/// * `Error in fence creation` - If there is an error in the fence creation. It may be caused 
+/// if the input contains non-ASCII or multi-byte Unicode characters, which could cause the 
+/// `input.chars().nth(index)` to behave unpredictably.
+/// 
 /// # Example
 /// 
 /// ```
@@ -24,12 +75,6 @@ use crate::helpers::*;
 /// 
 /// assert_eq!(ciphertext, "H !e,wdloollr");
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input string is empty
-/// * `Key must be greater than 0` - If the key is less than 1
-/// * `Error in fence creation` - If there is an error in the fence creation
 pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static str> {
 
     if input.is_empty() {
@@ -79,6 +124,18 @@ pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'sta
 /// * `input` - The string to decrypt
 /// * `key` - The number of rails used to encrypt the string
 /// 
+/// # Returns
+/// 
+/// Returns a `Result` containing the decrypted data or an error string if encryption fails.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input string is empty
+/// * `Key must be greater than 0` - If the key is less than 1
+/// * `Error in fence creation` - If there is an error in the fence creation. It may be caused 
+/// if the input contains non-ASCII or multi-byte Unicode characters, which could cause the 
+/// `input.chars().nth(index)` to behave unpredictably.
+///
 /// # Example
 /// 
 /// ```
@@ -89,12 +146,6 @@ pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'sta
 /// 
 /// assert_eq!(plaintext, "Hello, world!");
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input string is empty
-/// * `Key must be greater than 0` - If the key is less than 1
-/// * `Error in fence creation` - If there is an error in the fence creation
 pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'static str> {
 
     if input.is_empty() {
@@ -161,6 +212,17 @@ pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'sta
 /// * `input` - The string to encrypt
 /// * `key` - The number of rails to use
 /// 
+/// # Returns
+/// 
+/// Returns a `Result` containing the encrypted data or an error string if encryption fails.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input string is empty  
+/// * `Key must be greater than 0` - If the key is less than 1
+/// * `Memory access error` - Can occur if the input contains non-ASCII or multi-byte Unicode 
+/// characters that cause `input.chars().nth(index)` to behave unpredictably.
+/// 
 /// # Example
 /// 
 /// ```
@@ -170,14 +232,7 @@ pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'sta
 /// let ciphertext = route_cipher_encrypt(&plaintext, 3).unwrap();
 /// 
 /// assert_eq!(ciphertext, "Hl r!eowl l,od ");
-/// 
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input string is empty  
-/// * `Key must be greater than 0` - If the key is less than 1
-/// * `Memory access error` - If there is an error in setting the characters in the result string
 pub fn route_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static str> {
 
     if input.is_empty() {
@@ -216,6 +271,17 @@ pub fn route_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static s
 /// * `input` - The string to decrypt
 /// * `key` - The number of rails used to encrypt the string
 /// 
+/// # Returns
+/// 
+/// Returns a `Result` containing the decrypted data or an error string if encryption fails.
+/// 
+/// # Errors
+///
+/// * `Input must not be empty` - If the input string is empty  
+/// * `Key must be greater than 0` - If the key is less than 1
+/// * `Memory access error` - Can occur if the input contains non-ASCII or multi-byte Unicode 
+/// characters that cause `input.chars().nth(index)` to behave unpredictably.
+/// 
 /// # Example
 /// 
 /// ```
@@ -227,12 +293,6 @@ pub fn route_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static s
 /// assert_eq!(plaintext, "Hello, world!");
 /// 
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input string is empty
-/// * `Key must be greater than 0` - If the key is less than 1
-/// * `Memory access error` - If there is an error in setting the characters in the result string
 pub fn route_cipher_decrypt(input: &str, key: u128) -> Result<String, &'static str> {
     
     if input.is_empty() {
@@ -274,31 +334,38 @@ pub fn route_cipher_decrypt(input: &str, key: u128) -> Result<String, &'static s
 /// * `key` - The key to use for encryption
 /// * `rounds` - The number of rounds to use for encryption
 /// 
+/// # Returns
+/// 
+/// A `Result` containing the encrypted data on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
+/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round 
+/// function in the Key Derivation Function.
+/// 
 /// # Example
 /// 
 /// ```
 ///  use cryptographic_primitives::feistel_network_encrypt;
 /// 
 /// let plaintext = b"Hello, world!";
-/// let ciphertext = feistel_network_encrypt(plaintext, &15, 5).unwrap();
+/// let ciphertext = feistel_network_encrypt(plaintext, 15, 5).unwrap();
 /// 
 /// assert_eq!(ciphertext, vec![20, 214, 205, 97, 45, 140, 194, 245, 186, 32, 98, 214, 120, 45]);
-/// 
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input array is empty
-/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
-/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round function or the Key Derivation Function
-pub fn feistel_network_encrypt(input: &[u8], key: &u128, rounds: u32) -> Result<Vec<u8>, &'static str> {
+pub fn feistel_network_encrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u8>, &'static str> {
     if input.is_empty() {
         return Err("Input must not be empty");
     } else if rounds < 1 {
         return Err("Number of rounds must be greater than 0");
     }
 
-    let subkeys = kdf(&key.to_le_bytes(), rounds as usize).unwrap();
+    let subkeys = match kdf(&key.to_le_bytes(), rounds as usize) {
+        Ok(s) => s,
+        Err(m) => return Err(m),
+    };
     
     let mut padded_input = input.to_vec();
     if input.len() % 2 != 0 {
@@ -314,8 +381,16 @@ pub fn feistel_network_encrypt(input: &[u8], key: &u128, rounds: u32) -> Result<
     for i in 0..rounds {
         let mut round_result = Vec::with_capacity(input_size);
         let round_function_result = feistel_round_function(&right_side, &subkeys[i as usize]).unwrap();
+        
+        // Make sure the round function result is the same size as the left side
+        let extended_round_result = if round_function_result.len() < left_side.len() {
+            round_function_result.iter().cycle().take(left_side.len()).cloned().collect::<Vec<u8>>()
+        } else {
+            round_function_result[..left_side.len()].to_vec() // Truncate if it's longer
+        };
+
         for j in 0..input_size / 2 {
-            round_result.push(left_side[j] ^ round_function_result[j]);
+            round_result.push(left_side[j] ^ extended_round_result[j]);
         }
         left_side = right_side;
         right_side = round_result;
@@ -336,49 +411,62 @@ pub fn feistel_network_encrypt(input: &[u8], key: &u128, rounds: u32) -> Result<
 /// * `key` - The key to use for decryption
 /// * `rounds` - The number of rounds to use for decryption
 /// 
+/// # Returns
+/// 
+/// A `Result` containing the decrypted data on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+/// * `Input length must be a multiple of 2` - If the input length is not a multiple of 2
+/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
+/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round function 
+/// in the Key Derivation Function
+/// 
 /// # Example
 /// 
 /// ```
 /// use cryptographic_primitives::{feistel_network_encrypt, feistel_network_decrypt};
 /// 
 /// let plaintext = b"Hello, world!";
-/// let ciphertext = feistel_network_encrypt(plaintext, &15, 5).unwrap();
-/// let decrypted = feistel_network_decrypt(&ciphertext, &15, 5).unwrap();
+/// let ciphertext = feistel_network_encrypt(plaintext, 15, 5).unwrap();
+/// let decrypted = feistel_network_decrypt(&ciphertext, 15, 5).unwrap();
 /// 
 /// assert_eq!(decrypted, plaintext.to_vec());
-/// 
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input array is empty
-/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
-/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round function or the Key Derivation Function
-pub fn feistel_network_decrypt(input: &[u8], key: &u128, rounds: u32) -> Result<Vec<u8>, &'static str> {
+pub fn feistel_network_decrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u8>, &'static str> {
     if input.is_empty() {
         return Err("Input must not be empty");
     } else if rounds < 1 {
         return Err("Number of rounds must be greater than 0");
     }
 
-    let subkeys = kdf(&key.to_le_bytes(), rounds as usize).unwrap();
-
-    let mut padded_input = input.to_vec();
     if input.len() % 2 != 0 {
-        // Pad the input with a null byte
-        padded_input = input.to_vec();
-        padded_input.push(0);
+        return Err("Input length must be a multiple of 2");
     }
 
-    let input_size = padded_input.len();
-    let mut left_side = padded_input[..input_size / 2].to_vec();
-    let mut right_side = padded_input[input_size / 2..].to_vec();
+    let subkeys = match kdf(&key.to_le_bytes(), rounds as usize) {
+        Ok(s) => s,
+        Err(m) => return Err(m),
+    };
+
+    let input_size = input.len();
+    let mut left_side = input[..input_size / 2].to_vec();
+    let mut right_side = input[input_size / 2..].to_vec();
 
     for i in (0..rounds).rev() {
         let mut round_result = Vec::with_capacity(input_size);
         let round_function_result = feistel_round_function(&right_side, &subkeys[i as usize]).unwrap();
+
+        // Make sure the round function result is the same size as the left side
+        let extended_round_result = if round_function_result.len() < left_side.len() {
+            round_function_result.iter().cycle().take(left_side.len()).cloned().collect::<Vec<u8>>()
+        } else {
+            round_function_result[..left_side.len()].to_vec() // Truncate if it's longer
+        };
+
         for j in 0..input_size / 2 {
-            round_result.push(left_side[j] ^ round_function_result[j]);
+            round_result.push(left_side[j] ^ extended_round_result[j]);
         }
         left_side = right_side;
         right_side = round_result;
@@ -388,7 +476,8 @@ pub fn feistel_network_decrypt(input: &[u8], key: &u128, rounds: u32) -> Result<
     result.append(&mut right_side);
     result.append(&mut left_side);
 
-    if result[input_size - 1] == 0 {
+    // remove all trailing null bytes
+    while result.last() == Some(&0) {
         result.pop();
     }
 
@@ -403,6 +492,17 @@ pub fn feistel_network_decrypt(input: &[u8], key: &u128, rounds: u32) -> Result<
 /// * `key` - The key to use for encryption
 /// * `rounds` - The number of rounds to use for encryption
 /// 
+/// # Returns
+/// 
+/// A `Result` containing the encrypted data on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
+/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round function 
+/// in the Key Derivation Function
+/// 
 /// # Example
 /// 
 /// ```
@@ -412,13 +512,7 @@ pub fn feistel_network_decrypt(input: &[u8], key: &u128, rounds: u32) -> Result<
 /// let ciphertext = sub_per_box_encrypt(plaintext, 15, 3).unwrap();
 /// 
 /// assert_eq!(ciphertext, vec![88, 16, 91, 161, 233, 130, 28, 216, 159, 37, 150, 29, 125, 37, 247, 49]);
-/// 
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input array is empty
-/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
 pub fn sub_per_box_encrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u8>, &'static str> {
 
     if input.is_empty() {
@@ -437,7 +531,10 @@ pub fn sub_per_box_encrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
     }
 
     let input_size = padded_input.len();
-    let mut subkeys = kdf(&key.to_le_bytes(), (rounds / 2 + 1) as usize).unwrap();
+    let mut subkeys = match kdf(&key.to_le_bytes(), (rounds / 2 + 1) as usize) {
+        Ok(s) => s,
+        Err(m) => return Err(m),
+    };
     let mut result = padded_input;
 
     // split each subkey in half to generate 128-bit subkeys
@@ -470,7 +567,7 @@ pub fn sub_per_box_encrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
                 }
             } else {
                 // Permute the bits
-                let permuted_sequence = permute(&result[j..j + 16], false).unwrap();
+                let permuted_sequence = permute(&result[j..j + 16], false, &P_BOX).unwrap();
                 for l in 0..16 {
                     result[j + l] = permuted_sequence[l];
                 }
@@ -489,6 +586,18 @@ pub fn sub_per_box_encrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
 /// * `key` - The key to use for decryption
 /// * `rounds` - The number of rounds to use for decryption
 /// 
+/// # Returns
+/// 
+/// A `Result` containing the decrypted data on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
+/// * `Input length must be a multiple of 16` - If the input length is not a multiple of 16
+/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round function 
+/// in the Key Derivation Function
+/// 
 /// # Example
 /// 
 /// ```
@@ -500,21 +609,21 @@ pub fn sub_per_box_encrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
 /// 
 /// assert_eq!(decrypted, plaintext.to_vec());
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input array is empty
-/// * `Number of rounds must be greater than 0` - If the number of rounds is less than 1
 pub fn sub_per_box_decrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u8>, &'static str> {
 
     if input.is_empty() {
         return Err("Input must not be empty");
+    } else if input.len() % 16 != 0 {
+        return Err("Input length must be a multiple of 16");
     } else if rounds < 1 {
         return Err("Number of rounds must be greater than 0");
     }
 
     let input_size = input.len();
-    let mut subkeys = kdf(&key.to_le_bytes(), (rounds / 2 + 1) as usize).unwrap();
+    let mut subkeys = match kdf(&key.to_le_bytes(), (rounds / 2 + 1) as usize) {
+        Ok(s) => s,
+        Err(m) => return Err(m),
+    };
     let mut result = input.to_vec();
 
     // split each subkey in half to generate 128-bit subkeys
@@ -537,7 +646,7 @@ pub fn sub_per_box_decrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
                 }
             } else {
                 // Permute the bits
-                let permuted_sequence = permute(&result[j..j + 16], true).unwrap();
+                let permuted_sequence = permute(&result[j..j + 16], true, &P_BOX).unwrap();
                 for l in 0..16 {
                     result[j + l] = permuted_sequence[l];
                 }
@@ -560,6 +669,8 @@ pub fn sub_per_box_decrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
         result.pop();
     }
 
+    println!("result sub per box decrypt: {:?}", result);
+
     Ok(result)
 }
 
@@ -570,6 +681,16 @@ pub fn sub_per_box_decrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
 /// * `input` - The array of bytes to encrypt
 /// * `key` - The key to use for encryption
 /// 
+/// # Returns
+/// 
+/// A `Result` containing the encrypted data on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round function
+/// in the Key Derivation Function
+/// 
 /// # Example
 /// 
 /// ```
@@ -579,12 +700,7 @@ pub fn sub_per_box_decrypt(input: &[u8], key: u128, rounds: u32) -> Result<Vec<u
 /// let ciphertext = aes_128_encrypt(plaintext, 15).unwrap();
 /// 
 /// assert_eq!(ciphertext, vec![155, 3, 38, 236, 178, 74, 170, 22, 159, 40, 200, 204, 111, 144, 70, 26]);
-/// 
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input array is empty
 pub fn aes_128_encrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
 
     if input.is_empty() {
@@ -601,10 +717,13 @@ pub fn aes_128_encrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str>
     }
 
     let input_size = padded_input.len();
-    let mut subkeys = kdf(&key.to_le_bytes(), 6).unwrap();
+    let mut subkeys = match kdf(&key.to_le_bytes(), 6) {
+        Ok(s) => s,
+        Err(m) => return Err(m),
+    };
     let mut result = padded_input;
     let mut s_box = [0u8; 256];
-    initialize_aes_sbox(&mut s_box);
+    initialize_aes_sbox(&mut s_box)?;
 
     // split each subkey in half to generate 128-bit subkeys
     for i in 0..subkeys.len() {
@@ -669,6 +788,17 @@ pub fn aes_128_encrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str>
 /// 
 /// * `input` - The array of bytes to decrypt
 /// * `key` - The key to use for decryption
+///
+/// # Returns
+/// 
+/// A `Result` containing the decrypted data on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `Input must not be empty` - If the input array is empty
+/// * `Input length must be a multiple of 16` - If the input length is not a multiple of 16
+/// * `HMAC creation failed` - If there is an error in creating the HMAC for the round function
+/// in the Key Derivation Function
 /// 
 /// # Example
 /// 
@@ -680,23 +810,23 @@ pub fn aes_128_encrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str>
 /// let decrypted = aes_128_decrypt(&ciphertext, 15).unwrap();
 /// 
 /// assert_eq!(decrypted, plaintext.to_vec());
-/// 
 /// ```
-/// 
-/// # Errors
-/// 
-/// * `Input must not be empty` - If the input array is empty
 pub fn aes_128_decrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
 
     if input.is_empty() {
         return Err("Input must not be empty");
+    } else if input.len() % 16 != 0 {
+        return Err("Input length must be a multiple of 16");
     }
 
     let input_size = input.len();
-    let mut subkeys = kdf(&key.to_le_bytes(), 6).unwrap();
+    let mut subkeys = match kdf(&key.to_le_bytes(), 6) {
+        Ok(s) => s,
+        Err(m) => return Err(m),
+    };
     let mut result = input.to_vec();
     let mut s_box = [0u8; 256];
-    initialize_aes_sbox(&mut s_box);
+    initialize_aes_sbox(&mut s_box)?;
 
     // split each subkey in half to generate 128-bit subkeys
     for i in 0..subkeys.len() {

@@ -1,6 +1,6 @@
 [package]
 name = "cryptographic_primitives"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Razvan-Andrei Perial <razvanperial@gmail.com>"]
 edition = "2021"
 description = "A crate that provides cryptographic primitives."

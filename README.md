@@ -20,14 +20,6 @@ The crate currently provides the following cryptographic primitives, with an enc
 - Substitution-Permutation Network (SPN)
 - Advanced Encryption Standard (AES)
 
-The following cryptographic primitives are planned to be implemented in the future:
-
-- Electronic Codebook (ECB) mode
-- Cipher Block Chaining (CBC) mode
-- Counter (CTR) mode
-- Output Feedback (OFB) mode
-- Rivest-Shamir-Adleman (RSA) algorithm
-
 The `helpers` module provides the following helper functions for cryptographic algorithms:
 
 - `rotl8`
@@ -37,12 +29,18 @@ The `helpers` module provides the following helper functions for cryptographic a
 - `kdf`
 - `gmix_column`
 - `gmix_column_inv`
+- `xor_bytes`
 
 The `constants` module provides some useful constants for cryptographic algorithms, such as:
-- and example `S-Box`
-- an example `P-Box`
+- a sample `S-Box`
+- a sample `P-Box`
 - `MIX_COLUMNS_LOOKUP_2`, `MIX_COLUMNS_LOOKUP_3`, `MIX_COLUMNS_LOOKUP_9`, `MIX_COLUMNS_LOOKUP_11`, `MIX_COLUMNS_LOOKUP_13`, `MIX_COLUMNS_LOOKUP_14` lookup tables for the AES MixColumns operation
 
+The `block_cipher` module provides the following block cipher modes of operation, with an encryption and decryption function for each:
+- Electronic Codebook (ECB) mode
+- Cipher Block Chaining (CBC) mode
+- Counter (CTR) mode
+- Output Feedback (OFB) mode
 
 For any suggestions or requests, feel free to open an issue on [this repository](https://github.com/razvanperial/cryptographic_primitives).
 
@@ -52,7 +50,7 @@ Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-cryptographic_primitives = "0.1.0"
+cryptographic_primitives = "0.2.0"
 ```
 You can also use `cargo` to add the dependency to your `Cargo.toml`:
 
@@ -68,17 +66,19 @@ use cryptographic_primitives::*;
 
 ## Example
 
-Here is an example of using the `sub_per_box_encrypt` and `sub_per_box_decrypt` functions to encrypt and decrypt a message using the substitution-permutation network (SPN) algorithm.
+Here is an example of using the `aes_128_encrypt` and `aes_128_decrypt` functions to encrypt and decrypt a plaintext using the Electronic Codebook (ECB) mode of operation:
 
 ```rust
-use cryptographic_primitives::{sub_per_box_encrypt, sub_per_box_decrypt};
+use cryptographic_primitives::{aes_128_decrypt, aes_128_encrypt};
+use cryptographic_primitives::block_ciphers::{ecb_encrypt, ecb_decrypt};
 
-let plaintext = b"Hello, world!";
-// key = 15, rounds = 3
-let ciphertext = sub_per_box_encrypt(plaintext, 15, 3).unwrap();
-let decrypted = sub_per_box_decrypt(&ciphertext, 15, 3).unwrap();
+let plaintext = b"Hello, World!";
+let key = 0x2b7e151628aed2a6abf7158809cf4f3c;
 
-assert_eq!(plaintext.to_vec(), decrypted);
+let encrypted = ecb_encrypt(plaintext, key, aes_128_encrypt).unwrap();
+let decrypted = ecb_decrypt(&encrypted, key, aes_128_decrypt).unwrap();
+
+assert_eq!(decrypted, plaintext);
 ```
 
 ## License

@@ -1,8 +1,20 @@
 //! # Helpers Module
 //!
-//! This module contains various helper functions used across different cryptographic primitives.
-//! These functions include bitwise rotations, AES S-box initialization, Feistel round functions, 
-//! and more.
+//! This module provides utility functions used throughout the cryptographic primitives.
+//! It includes functions for performing bitwise operations (like rotations), AES S-box
+//! initialization, Feistel round operations, and functions to facilitate common cryptographic tasks
+//! like XORing byte arrays or permuting bits.
+//!
+//! These helper functions are designed to be reusable across various cryptographic algorithms and modes
+//! implemented within this crate, contributing to the overall encryption, decryption, and key generation processes.
+//!
+//! Key functionality provided by this module includes:
+//! - Bitwise rotation of bytes (e.g., `rotl8`)
+//! - Initialization of the AES S-box used in AES encryption/decryption
+//! - Feistel round function with HMAC-SHA256
+//! - Key derivation using HMAC-SHA256
+//! - Byte-level XOR operations and P-box bit permutations
+//! - AES MixColumns and inverse MixColumns operations
 
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
@@ -20,16 +32,27 @@ use crate::constants::*;
 /// 
 /// A new 8-bit unsigned integer that is the result of rotating `x` to the left by `shift` bits.
 /// 
+/// # Errors
+/// 
+/// * `Shift value must be between 0 and 7` - If the shift value is not between 0 and 7.
+/// 
 /// # Examples
 /// 
 /// ```
 /// use cryptographic_primitives::helpers::rotl8;
 /// 
-/// let result = rotl8(0b10110010, 3);
+/// let result = rotl8(0b10110010, 3).unwrap();
 /// assert_eq!(result, 0b10010101);
 /// ```
-pub fn rotl8(x: u8, shift: u8) -> u8 {
-    (x << shift) | (x >> (8 - shift))
+pub fn rotl8(x: u8, shift: u8) -> Result<u8, &'static str> {
+    if shift >= 8 {
+        return Err("Shift value must be between 0 and 7");
+    }
+    if shift == 0 {
+        return Ok(x);
+    }
+
+    Ok((x << shift) | (x >> (8 - shift)))
 }
 
 /// Initializes the AES S-box with a predefined affine transformation.
@@ -37,6 +60,14 @@ pub fn rotl8(x: u8, shift: u8) -> u8 {
 /// # Arguments
 /// 
 /// * `sbox` - A mutable reference to an array of 256 `u8` values where the S-box will be stored.
+/// 
+/// # Returns
+/// 
+/// A `Result` containing `()` on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// Can return an error message if the affine transformation fails (specific to the `rotl8` function).
 /// 
 /// # Examples
 /// 
@@ -46,7 +77,7 @@ pub fn rotl8(x: u8, shift: u8) -> u8 {
 /// let mut sbox = [0u8; 256];
 /// initialize_aes_sbox(&mut sbox);
 /// ```
-pub fn initialize_aes_sbox(sbox: &mut [u8; 256]) {
+pub fn initialize_aes_sbox(sbox: &mut [u8; 256]) -> Result<(), &'static str> {
     let mut p: u8 = 1;
     let mut q: u8 = 1;
 
@@ -61,7 +92,11 @@ pub fn initialize_aes_sbox(sbox: &mut [u8; 256]) {
         q ^= if q & 0x80 != 0 { 0x09 } else { 0 };
 
         // compute the affine transformation
-        let xformed = q ^ rotl8(q, 1) ^ rotl8(q, 2) ^ rotl8(q, 3) ^ rotl8(q, 4);
+        let xformed = q 
+            ^ rotl8(q, 1)? 
+            ^ rotl8(q, 2)? 
+            ^ rotl8(q, 3)? 
+            ^ rotl8(q, 4)?;
 
         sbox[p as usize] = xformed ^ 0x63;
 
@@ -72,6 +107,8 @@ pub fn initialize_aes_sbox(sbox: &mut [u8; 256]) {
 
     // 0 is a special case since it has no inverse
     sbox[0] = 0x63;
+
+    Ok(())
 }
 
 /// Permutes a block of 128 bits using the P-box.
@@ -85,23 +122,32 @@ pub fn initialize_aes_sbox(sbox: &mut [u8; 256]) {
 /// 
 /// A `Result` containing the permuted byte vector on success, or an error message on failure.
 /// 
+/// # Errors
+/// 
+/// * `Input length must be 16 bytes` - If the input length is not 16 bytes.
+/// 
 /// # Examples
 /// 
 /// ```
 /// use cryptographic_primitives::helpers::permute;
+/// use cryptographic_primitives::constants::P_BOX;
 /// 
 /// let input = vec![0u8; 16];
-/// let permuted = permute(&input, false).unwrap();
+/// let permuted = permute(&input, false, &P_BOX).unwrap();
 /// ```
-pub fn permute(input: &[u8], reverse: bool) -> Result<Vec<u8>, &'static str> {
+pub fn permute(input: &[u8], reverse: bool, p_box: &[u8; 128]) -> Result<Vec<u8>, &'static str> {
+    if input.len() != 16 {
+        return Err("Input length must be 16 bytes");
+    }
+
     let input_bits = input.view_bits::<Msb0>();
     let mut permuted_bits: Vec<bool> = vec![false; 128];
 
     for i in 0..input_bits.len() {
         if !reverse {
-            permuted_bits[P_BOX[i] as usize] = input_bits[i];
+            permuted_bits[p_box[i] as usize] = input_bits[i];
         } else {
-            permuted_bits[i] = input_bits[P_BOX[i] as usize];
+            permuted_bits[i] = input_bits[p_box[i] as usize];
         }
     }
 
@@ -128,6 +174,10 @@ pub fn permute(input: &[u8], reverse: bool) -> Result<Vec<u8>, &'static str> {
 /// # Returns
 /// 
 /// A `Result` containing the resulting byte vector on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `HMAC creation failed` - If the HMAC creation fails.
 /// 
 /// # Examples
 /// 
@@ -160,6 +210,10 @@ pub fn feistel_round_function(input: &[u8], subkey: &[u8]) -> Result<Vec<u8>, &'
 /// 
 /// A `Result` containing a vector of subkey vectors on success, or an error message on failure.
 /// 
+/// # Errors
+/// 
+/// * `HMAC creation failed` - If the HMAC creation fails.
+/// 
 /// # Examples
 /// 
 /// ```
@@ -176,7 +230,7 @@ pub fn kdf(initial_key: &[u8], num_rounds: usize) -> Result<Vec<Vec<u8>>, &'stat
         // Use HMAC-SHA256 as the PRF
         let mac = match Hmac::<Sha256>::new_from_slice(&key) {
             Ok(m) => m,
-            Err(_) => panic!("HMAC creation failed"),
+            Err(_) => return Err("HMAC creation failed"),
         };
 
         // Generate subkey
@@ -258,4 +312,43 @@ pub fn gmix_column_inv(r: &mut [u8; 4]) {
            MIX_COLUMNS_LOOKUP_13[a[1] as usize] ^ 
            MIX_COLUMNS_LOOKUP_9[a[2] as usize] ^ 
            MIX_COLUMNS_LOOKUP_14[a[3] as usize];
+}
+
+/// XORs two byte slices together.
+/// 
+/// # Arguments
+/// 
+/// * `input` - The input byte slice to XOR.
+/// * `key` - The key byte slice to XOR.
+/// 
+/// # Returns
+/// 
+/// A `Result` containing the resulting byte vector on success, or an error message on failure.
+/// 
+/// # Errors
+/// 
+/// * `Input and key lengths must be equal` - If the input and key lengths are not equal.
+/// 
+/// # Examples
+/// 
+/// ```
+/// use cryptographic_primitives::helpers::xor_bytes;
+/// 
+/// let input = [0xFF, 0xAA, 0x55, 0x00];
+/// let key = [0x00, 0xFF, 0xAA, 0x55];
+/// let expected_output = [0xFF, 0x55, 0xFF, 0x55];
+/// let result = xor_bytes(&input, &key).unwrap();
+/// assert_eq!(result, expected_output);
+/// ```
+pub fn xor_bytes(input: &[u8], key: &[u8]) -> Result<Vec<u8>, &'static str> {
+    if input.len() != key.len() {
+        return Err("Input and key lengths must be equal");
+    }
+
+    let mut result = Vec::with_capacity(input.len());
+    for i in 0..input.len() {
+        result.push(input[i] ^ key[i]);
+    }
+
+    Ok(result)
 }
