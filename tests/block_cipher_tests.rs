@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests {
     use cryptographic_primitives::{
+        rail_fence_cipher_encrypt, rail_fence_cipher_decrypt,
+        route_cipher_encrypt, route_cipher_decrypt,
         feistel_network_encrypt, feistel_network_decrypt,
         sub_per_box_encrypt, sub_per_box_decrypt,
         aes_128_encrypt, aes_128_decrypt,
@@ -22,10 +24,10 @@ mod tests {
     const PLAINTEXT7: &[u8; 16] = b"ThisIs 16 Bytes!";
     const PLAINTEXT8: &[u8; 15] = b"ThisIs 15 bytes";
 
-    const KEY1: u128 = 0x2b7e151628aed2a6abf7158809cf4f3c;
-    const KEY2: u128 = 0x1;
-    const KEY3: u128 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
-    const KEY4: u128 = 0x00000000000000000000000000000000;
+    const KEY1: u128 = 0x00000000000000000000000000000000;
+    const KEY2: u128 = 0x2b7e151628aed2a6abf7158809cf4f3c;
+    const KEY3: u128 = 0x1;
+    const KEY4: u128 = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF;
     const KEY5: u128 = 0xAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA;
     const KEY6: u128 = 0x55555555555555555555555555555555;
     const KEY7: u128 = 0x0123456789ABCDEF0123456789ABCDEF;
@@ -68,6 +70,107 @@ mod tests {
     const NONCES: [[u8; 8]; 8] = [
         NONCE1, NONCE2, NONCE3, NONCE4, NONCE5, NONCE6, NONCE7, NONCE8
     ];
+
+    #[test]
+    fn ecb_rail_fence_cipher_test() {
+        // skip when key is 0
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                let ciphertext = ecb_encrypt(*&plaintext, *key, rail_fence_cipher_encrypt).unwrap();
+                let decrypted = ecb_decrypt(&ciphertext, *key, rail_fence_cipher_decrypt).unwrap();
+                assert_eq!(*plaintext, decrypted);
+            }
+        }
+    }
+
+    #[test]
+    fn cbc_rail_fence_cipher_test() {
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                for iv in IVS.iter() {
+                    let ciphertext = cbc_encrypt(*&plaintext, *key, *iv, rail_fence_cipher_encrypt).unwrap();
+                    let decrypted = cbc_decrypt(&ciphertext, *key, *iv, rail_fence_cipher_decrypt).unwrap();
+                    assert_eq!(*plaintext, decrypted);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ofb_rail_fence_cipher_test() {
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                for iv in IVS.iter() {
+                    let ciphertext = ofb_encrypt(*&plaintext, *key, *iv, rail_fence_cipher_encrypt).unwrap();
+                    let decrypted = ofb_decrypt(&ciphertext, *key, *iv, rail_fence_cipher_encrypt).unwrap();
+                    assert_eq!(*plaintext, decrypted);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ctr_rail_fence_cipher_test() {
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                for nonce in NONCES.iter() {
+                    let ciphertext = ctr_encrypt(*&plaintext, *key, *nonce, rail_fence_cipher_encrypt).unwrap();
+                    let decrypted = ctr_decrypt(&ciphertext, *key, *nonce, rail_fence_cipher_encrypt).unwrap();
+                    assert_eq!(*plaintext, decrypted);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ecb_route_cipher_test() {
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                let ciphertext = ecb_encrypt(*&plaintext, *key, route_cipher_encrypt).unwrap();
+                let decrypted = ecb_decrypt(&ciphertext, *key, route_cipher_decrypt).unwrap();
+                assert_eq!(*plaintext, decrypted);
+            }
+        }
+    }
+
+    #[test]
+    fn cbc_route_cipher_test() {
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                for iv in IVS.iter() {
+                    let ciphertext = cbc_encrypt(*&plaintext, *key, *iv, route_cipher_encrypt).unwrap();
+                    let decrypted = cbc_decrypt(&ciphertext, *key, *iv, route_cipher_decrypt).unwrap();
+                    assert_eq!(*plaintext, decrypted);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ofb_route_cipher_test() {
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                for iv in IVS.iter() {
+                    let ciphertext = ofb_encrypt(*&plaintext, *key, *iv, route_cipher_encrypt).unwrap();
+                    let decrypted = ofb_decrypt(&ciphertext, *key, *iv, route_cipher_encrypt).unwrap();
+                    assert_eq!(*plaintext, decrypted);
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn ctr_route_cipher_test() {
+        for key in KEYS.iter().skip(1) {
+            for plaintext in PLAINTEXTS.iter() {
+                for nonce in NONCES.iter() {
+                    let ciphertext = ctr_encrypt(*&plaintext, *key, *nonce, route_cipher_encrypt).unwrap();
+                    let decrypted = ctr_decrypt(&ciphertext, *key, *nonce, route_cipher_decrypt).unwrap();
+                    assert_eq!(*plaintext, decrypted);
+                }
+            }
+        }
+    }
 
     #[test]
     fn ecb_aes_128_test() {

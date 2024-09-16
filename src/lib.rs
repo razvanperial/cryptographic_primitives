@@ -46,11 +46,11 @@ pub mod block_ciphers;
 use crate::constants::*;
 use crate::helpers::*;
 
-/// Encrypts a string using the rail fence cipher.
+/// Encrypts an array of bytes using the rail fence cipher.
 /// 
 /// # Arguments
 /// 
-/// * `input` - The string to encrypt
+/// * `input` - The array of bytes to encrypt
 /// * `key` - The number of rails to use
 /// 
 /// # Returns
@@ -59,46 +59,46 @@ use crate::helpers::*;
 /// 
 /// # Errors
 /// 
-/// * `Input must not be empty` - If the input string is empty
+/// * `Input must not be empty` - If the input array is empty
 /// * `Key must be greater than 0` - If the key is less than 1
-/// * `Error in fence creation` - If there is an error in the fence creation. It may be caused 
-/// if the input contains non-ASCII or multi-byte Unicode characters, which could cause the 
-/// `input.chars().nth(index)` to behave unpredictably.
+/// * `Error in fence creation` - It may happen if the input contains non-ASCII or multi-byte 
+/// characters, which could lead to unpredictable behavior when attempting to find a position
+/// in the fence array.
 /// 
 /// # Example
 /// 
 /// ```
 /// use cryptographic_primitives::rail_fence_cipher_encrypt;
 /// 
-/// let plaintext = String::from("Hello, world!");
-/// let ciphertext = rail_fence_cipher_encrypt(&plaintext, 4).unwrap();
+/// let plaintext = b"Hello, world!";
+/// let ciphertext = rail_fence_cipher_encrypt(plaintext, 4).unwrap();
 /// 
-/// assert_eq!(ciphertext, "H !e,wdloollr");
+/// assert_eq!(ciphertext, b"H !e,wdloollr");
 /// ```
-pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static str> {
+pub fn rail_fence_cipher_encrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
 
     if input.is_empty() {
         return Err("Input must not be empty");
     } else if key == 1 || key >= input.len() as u128 {
-        return Ok(String::from(input));
+        return Ok(input.to_vec());
     } else if key < 1{
         return Err("Key must be greater than 0");
     }
 
     let row_length = (input.len() / key as usize) * 2 - 1 ;
-    let mut fence: Vec<Vec<char>> = vec![vec!['\0'; row_length]; key as usize];
+    let mut fence: Vec<Vec<u8>> = vec![vec![0; row_length]; key as usize];
     let mut rail: i32 = 0;
     let mut dir: i32 = 1; // 1 = down, -1 = up
-    let mut result = String::new();
+    let mut result = Vec::new();
     result.reserve_exact(input.len());
 
-    for c in input.chars() {
-        let column_index = match fence[rail as usize].iter().position(|&x| x == '\0') {
+    for c in input.iter() {
+        let column_index = match fence[rail as usize].iter().position(|&x| x == 0) {
             Some(i) => i,
             None => return Err("Error in fence creation"),
         };
 
-        fence[rail as usize][column_index] = c;
+        fence[rail as usize][column_index] = *c;
 
         rail += dir;
         if rail == 0 || rail == key as i32 - 1 {
@@ -108,7 +108,7 @@ pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'sta
 
     for rail in fence {
         for c in rail {
-            if c != '\0' {
+            if c != 0 {
                 result.push(c);
             }
         }
@@ -117,11 +117,11 @@ pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'sta
     Ok(result)
 }
 
-/// Decrypts a string using the rail fence cipher.
+/// Decrypts an array of bytes using the rail fence cipher.
 /// 
 /// # Arguments
 /// 
-/// * `input` - The string to decrypt
+/// * `input` - The array of bytes to decrypt
 /// * `key` - The number of rails used to encrypt the string
 /// 
 /// # Returns
@@ -132,40 +132,40 @@ pub fn rail_fence_cipher_encrypt(input: &str, key: u128) -> Result<String, &'sta
 /// 
 /// * `Input must not be empty` - If the input string is empty
 /// * `Key must be greater than 0` - If the key is less than 1
-/// * `Error in fence creation` - If there is an error in the fence creation. It may be caused 
-/// if the input contains non-ASCII or multi-byte Unicode characters, which could cause the 
-/// `input.chars().nth(index)` to behave unpredictably.
+/// * `Error in fence creation` - It may happen if the input contains non-ASCII or multi-byte 
+/// characters, which could lead to unpredictable behavior when attempting to find a position
+/// in the fence array.
 ///
 /// # Example
 /// 
 /// ```
 /// use cryptographic_primitives::rail_fence_cipher_decrypt;
 /// 
-/// let ciphertext = String::from("H !e,wdloollr");
-/// let plaintext = rail_fence_cipher_decrypt(&ciphertext, 4).unwrap();
+/// let ciphertext = b"H !e,wdloollr";
+/// let plaintext = rail_fence_cipher_decrypt(ciphertext, 4).unwrap();
 /// 
-/// assert_eq!(plaintext, "Hello, world!");
+/// assert_eq!(plaintext, b"Hello, world!");
 /// ```
-pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'static str> {
+pub fn rail_fence_cipher_decrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
 
     if input.is_empty() {
         return Err("Input must not be empty");
     } else if key == 1 || key >= input.len() as u128 {
-        return Ok(String::from(input));
+        return Ok(input.to_vec());
     } else if key < 1{
         return Err("Key must be greater than 0");
     }
 
-    let mut fence = vec![vec!['\0'; input.len()]; key as usize];
+    let mut fence: Vec<Vec<u8>> = vec![vec![0; input.len()]; key as usize];
     let mut dir = 1;
     let mut row: i32 = 0;
     let mut column: i32 = 0;
     let mut index;
-    let mut result = String::new();
+    let mut result = Vec::new();
     result.reserve_exact(input.len());
 
     for _ in 0..input.len() {
-        fence[row as usize][column as usize] = '*';
+        fence[row as usize][column as usize] = 1;
         column += 1;
 
         row += dir;
@@ -178,9 +178,9 @@ pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'sta
 
     for i in 0..key as usize {
         for j in 0..input.len() {
-            if fence[i][j] == '*' && index < input.len() {
-                fence[i][j] = match input.chars().nth(index) {
-                    Some(c) => c,
+            if fence[i][j] == 1 && index < input.len() {
+                fence[i][j] = match input.get(index) {
+                    Some(c) => *c,
                     None => return Err("Error in fence creation"),
                 };
                 index += 1;
@@ -201,15 +201,16 @@ pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'sta
             dir = -dir;
         }
     }
-    
+
     Ok(result)
+
 }
 
-/// Encrypts a string using the route cipher.
+/// Encrypts an array of bytes using the route cipher.
 /// 
 /// # Arguments
 /// 
-/// * `input` - The string to encrypt
+/// * `input` - The array of bytes to encrypt
 /// * `key` - The number of rails to use
 /// 
 /// # Returns
@@ -218,32 +219,33 @@ pub fn rail_fence_cipher_decrypt(input: &str, key: u128) -> Result<String, &'sta
 /// 
 /// # Errors
 /// 
-/// * `Input must not be empty` - If the input string is empty  
+/// * `Input must not be empty` - If the input array is empty
 /// * `Key must be greater than 0` - If the key is less than 1
-/// * `Memory access error` - Can occur if the input contains non-ASCII or multi-byte Unicode 
-/// characters that cause `input.chars().nth(index)` to behave unpredictably.
+/// * `Memory access error` - It may happen if the input contains non-ASCII or multi-byte 
+/// characters, which could lead to unpredictable behavior when attempting to find a 
+/// position in the byte array
 /// 
 /// # Example
 /// 
 /// ```
 /// use cryptographic_primitives::route_cipher_encrypt;
 /// 
-/// let plaintext = String::from("Hello, world!");
-/// let ciphertext = route_cipher_encrypt(&plaintext, 3).unwrap();
+/// let plaintext = b"Hello, world!";
+/// let ciphertext = route_cipher_encrypt(plaintext, 3).unwrap();
 /// 
-/// assert_eq!(ciphertext, "Hl r!eowl l,od ");
+/// assert_eq!(ciphertext, b"Hl r!eowl l,od ");
 /// ```
-pub fn route_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static str> {
+pub fn route_cipher_encrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
 
     if input.is_empty() {
         return Err("Input must not be empty");
     } else if key == 1 || key >= input.len() as u128 {
-        return Ok(String::from(input));
+        return Ok(input.to_vec());
     } else if key < 1{
         return Err("Key must be greater than 0");
     }
 
-    let mut result = String::new();
+    let mut result = Vec::new();
     let result_size = input.len() + (key as usize - input.len() % key as usize);
     let row_size = result_size / key as usize;
 
@@ -252,23 +254,23 @@ pub fn route_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static s
     for i in 0..result_size {
         let index = (i / row_size) + key as usize * (i % row_size);
         if index < input.len() {
-            match input.chars().nth(index) {
-                Some(c) => result.push(c),
+            match input.get(index) {
+                Some(c) => result.push(*c),
                 None => return Err("Memory access error"),
             }
         } else {
-            result.push(' ');
+            result.push(b' ');
         }
     }
 
-    Ok(String::from(result))
+    Ok(result)
 }
 
-/// Decrypts a string using the route cipher.
+/// Decrypts an array of bytes using the route cipher.
 /// 
 /// # Arguments
 /// 
-/// * `input` - The string to decrypt
+/// * `input` - The array of bytes to decrypt
 /// * `key` - The number of rails used to encrypt the string
 /// 
 /// # Returns
@@ -277,33 +279,34 @@ pub fn route_cipher_encrypt(input: &str, key: u128) -> Result<String, &'static s
 /// 
 /// # Errors
 ///
-/// * `Input must not be empty` - If the input string is empty  
+/// * `Input must not be empty` - If the input array is empty  
 /// * `Key must be greater than 0` - If the key is less than 1
-/// * `Memory access error` - Can occur if the input contains non-ASCII or multi-byte Unicode 
-/// characters that cause `input.chars().nth(index)` to behave unpredictably.
+/// * `Memory access error` - It may happen if the input contains non-ASCII or multi-byte 
+/// characters, which could lead to unpredictable behavior when attempting to find a 
+/// position in the byte array
 /// 
 /// # Example
 /// 
 /// ```
 /// use cryptographic_primitives::route_cipher_decrypt;
 /// 
-/// let ciphertext = String::from("Hl r!eowl l,od ");
-/// let plaintext = route_cipher_decrypt(&ciphertext, 3).unwrap();
+/// let ciphertext = b"Hl r!eowl l,od ";
+/// let plaintext = route_cipher_decrypt(ciphertext, 3).unwrap();
 /// 
-/// assert_eq!(plaintext, "Hello, world!");
+/// assert_eq!(plaintext, b"Hello, world!");
 /// 
 /// ```
-pub fn route_cipher_decrypt(input: &str, key: u128) -> Result<String, &'static str> {
+pub fn route_cipher_decrypt(input: &[u8], key: u128) -> Result<Vec<u8>, &'static str> {
     
     if input.is_empty() {
         return Err("Input must not be empty");
     } else if key == 1 || key >= input.len() as u128 {
-        return Ok(String::from(input));
+        return Ok(input.to_vec());
     } else if key < 1{
         return Err("Key must be greater than 0");
     }
 
-    let mut result = String::new();
+    let mut result = Vec::new();
     result.reserve(input.len());
     let row_size = input.len() / key as usize;
 
@@ -314,16 +317,18 @@ pub fn route_cipher_decrypt(input: &str, key: u128) -> Result<String, &'static s
         } else {
             index = (i * row_size) % (input.len() - 1);
         }
-        match input.chars().nth(index) {
-            Some(c) => result.push(c),
+        match input.get(index) {
+            Some(c) => result.push(*c),
             None => return Err("Memory access error"),
         }
     }
 
-    // cut off trailing spaces
-    result = result.trim_end().to_string();
+    // cut off any trailing spaces
+    while result.last() == Some(&b' ') {
+        result.pop();
+    }
 
-    Ok(String::from(result))
+    Ok(result)
 }
 
 /// Encrypts an array of bytes using the feistel cipher

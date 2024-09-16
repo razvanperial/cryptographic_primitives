@@ -47,19 +47,19 @@ mod tests {
     fn test_rail_fence_cipher() {
         for plaintext in PLAINTEXTS.iter() {
             for key in KEYS.iter() {
-                let ciphertext = rail_fence_cipher_encrypt(String::from_utf8_lossy(plaintext).as_ref(), *key).unwrap();
+                let ciphertext = rail_fence_cipher_encrypt(&plaintext, *key).unwrap();
                 let decrypted = rail_fence_cipher_decrypt(&ciphertext, *key).unwrap();
 
-                assert_eq!(decrypted, String::from_utf8_lossy(plaintext).as_ref());
+                assert_eq!(&decrypted[..], *plaintext);
             }
         }
 
         // Error case: Empty input
-        let result = rail_fence_cipher_encrypt("", 3);
+        let result = rail_fence_cipher_encrypt(b"", 3);
         assert!(result.is_err());
 
         // Error case: Key smaller than 1
-        let result = rail_fence_cipher_encrypt("Hello, world!", 0);
+        let result = rail_fence_cipher_encrypt(b"Hello, world!", 0);
         assert!(result.is_err());
     }
 
@@ -67,19 +67,19 @@ mod tests {
     fn test_route_cipher() {
         for plaintext in PLAINTEXTS.iter() {
             for key in KEYS.iter() {
-                let ciphertext = route_cipher_encrypt(String::from_utf8_lossy(plaintext).as_ref(), *key).unwrap();
+                let ciphertext = route_cipher_encrypt(&plaintext, *key).unwrap();
                 let decrypted = route_cipher_decrypt(&ciphertext, *key).unwrap();
 
-                assert_eq!(decrypted, String::from_utf8_lossy(plaintext).as_ref());
+                assert_eq!(decrypted, *plaintext);
             }
         }
 
         // Error case: Empty input
-        let result = route_cipher_encrypt("", 3);
+        let result = route_cipher_encrypt(b"", 3);
         assert!(result.is_err());
 
         // Error case: Key smaller than 1
-        let result = route_cipher_encrypt("Hello, world!", 0);
+        let result = route_cipher_encrypt(b"Hello, world!", 0);
         assert!(result.is_err());
     }
 

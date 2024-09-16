@@ -179,6 +179,11 @@ pub fn ecb_decrypt(input: &[u8], key: u128, decrypt_fn: CryptoFn) -> Result<Vec<
         result.extend(decrypted_chunk);
     }
 
+    // remove padding
+    while result.last() == Some(&0) {
+        result.pop();
+    }
+
     Ok(result)
 }
 
