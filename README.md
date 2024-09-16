@@ -2,7 +2,7 @@ Rust Cryptographic Primitives
 =============================
 [<img alt="github" src="https://img.shields.io/badge/github-razvanperial/cryptographic_primitives-8da0cb?style=for-the-badge&labelColor=555555&logo=github" height="20">](https://github.com/razvanperial/cryptographic_primitives)
 [<img alt="crates.io" src="https://img.shields.io/crates/v/cryptographic_primitives.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/cryptographic_primitives)
-[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-cryptographic_primitives-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/cryptographic_primitives/0.1.0/cryptographic_primitives/)
+[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-cryptographic_primitives-66c2a5?style=for-the-badge&labelColor=555555&logo=docs.rs" height="20">](https://docs.rs/cryptographic_primitives/0.2.0/cryptographic_primitives/)
 
 This repository contains a collection of cryptographic primitives implemented in Rust. The goal is to provide a comprehensive set of cryptographic primitives that are easy to use and hard to misuse. 
 
