@@ -6,8 +6,7 @@
 //! a provided encryption function (such as AES, Feistel cipher, etc.). 
 //! 
 //! The modes are designed to be compatible with all the encryption and decryption primitives 
-//! provided in this crate (except for `rail_fence_cipher` and `route_cipher` ones, but they will 
-//! be made compatible with version 0.2.0). However, due to the difference in function definitions
+//! provided in this crate. However, due to the difference in function definitions
 //! (some encryption and decryption functions neeeding a `round` argument), one would need to 
 //! provide a closure that wraps the encryption/decryption function with the required arguments
 //! for the specific functions that take an extra `round` argument.
